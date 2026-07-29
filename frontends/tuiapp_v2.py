@@ -2091,6 +2091,7 @@ COMMANDS = [
     ("/conductor", "[task]",           "调用 frontends/conductor.py 多 subagent 编排"),
     ("/scheduler", "",                 "多选启动/停止 reflect 任务（cron 由 reflect/scheduler.py 驱动）"),
     ("/continue", "[n|name]",         "列出 / 恢复历史会话"),
+    ("/delete",   "[n]",              "删除历史会话日志文件"),
     ("/workspace","[path|off]",       "设定工作目录(绝对路径)并进入项目模式"),
     ("/resume",   "",                 "列出最近会话并恢复其中一个"),
     ("/cost",     "[all]",            "显示当前会话 token 用量（all = 所有会话）"),
@@ -3614,7 +3615,7 @@ class GenericAgentTUI(App[None]):
             "effort": self._cmd_effort,
             "export": self._cmd_export,
             "restore": self._cmd_restore, "btw": self._cmd_btw, "review": self._cmd_review,
-            "continue": self._cmd_continue, "cost": self._cmd_cost,
+            "continue": self._cmd_continue, "delete": self._cmd_delete, "cost": self._cmd_cost,
             "workspace": self._cmd_workspace,
             "reload-keys": self._cmd_reload_keys,
             # slash_cmds bundle — see frontends/slash_cmds.py for the prompt
@@ -5650,6 +5651,70 @@ class GenericAgentTUI(App[None]):
     def _rw_rewind_root(self):
         """世界线树根目录(temp/.ga_rewind),供 continue_list 树感知发现"已回退至起点"的空会话。"""
         return os.path.join(os.path.normpath(os.path.join(FRONTENDS_DIR, '..', 'temp')), '.ga_rewind')
+
+    def _cmd_delete(self, args, raw):
+        """`/delete [n]` — delete a past session's log file + session_names entry. [HISTORY] local feature"""
+        from continue_cmd import list_sessions as continue_list
+        sessions = continue_list(exclude_log=os.path.basename(getattr(self.current.agent, "log_path", "") or ""),
+                                 rewind_root=self._rw_rewind_root())
+        if not sessions:
+            self._system("❌ 没有可删除的历史会话"); return
+        if args and args[0].isdigit():
+            idx = int(args[0]) - 1
+            if not (0 <= idx < len(sessions)):
+                self._system(f"❌ 索引越界（有效范围 1-{len(sessions)}）"); return
+            path = sessions[idx][0]
+            self._confirm_delete_session(path, sessions[idx])
+            return
+        # No arg: list recent sessions for user to pick
+        choices = []
+        try:
+            import session_names as _sn
+        except Exception:
+            _sn = None
+        for i, (path, mtime, first, n) in enumerate(sessions[:20], 1):
+            preview = (first or "（无法预览）").replace("\n", " ").replace("\\n", " ").replace("\\t", " ").replace("\\r", " ").strip()[:50]
+            nm = _sn.name_for(path) if _sn else ""
+            tag = f"{nm} · " if nm else ""
+            choices.append((f"{i}. {_short_age(mtime)} · {tag}{n}轮 · {preview}", path))
+        head = f"选择要删除的会话 ({len(sessions)} 条 · Esc 取消)"
+        msg = ChatMessage(
+            role="system", content=head, kind="choice", choices=choices,
+            on_select=lambda v: self._confirm_delete_session(v, None),
+        )
+        self.current.messages.append(msg)
+        self._refresh_messages()
+
+    def _confirm_delete_session(self, path, session_info):
+        """Confirm and delete a session log file + clean session_names."""
+        basename = os.path.basename(path)
+        preview = ""
+        if session_info:
+            _, mtime, first, n = session_info
+            preview = f" ({_short_age(mtime)}, {n}轮)"
+        msg = ChatMessage(
+            role="system", content=f"⚠️ 确认删除 {basename}{preview}？",
+            kind="choice",
+            choices=[("✅ 确认删除", path), ("❌ 取消", None)],
+            on_select=self._do_delete_session,
+        )
+        self.current.messages.append(msg)
+        self._refresh_messages()
+
+    def _do_delete_session(self, path):
+        if path is None:
+            self._system("已取消"); return
+        try:
+            os.remove(path)
+        except OSError as e:
+            self._system(f"❌ 删除失败: {e}"); return
+        # Clean session_names entry
+        try:
+            import session_names
+            session_names.set_name(path, "")
+        except Exception:
+            pass
+        self._system(f"✅ 已删除 {os.path.basename(path)}")
 
     def _cmd_continue(self, args, raw):
         sess = self.current

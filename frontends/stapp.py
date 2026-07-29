@@ -20,6 +20,7 @@ import chatapp_common  # activate /continue command (monkey patches GeneraticAge
 from continue_cmd import handle_frontend_command, reset_conversation, list_sessions, extract_ui_messages
 from btw_cmd import handle_frontend_command as btw_handle_frontend
 from export_cmd import last_assistant_text, export_to_temp, wrap_for_clipboard
+from history_utils import render_history_section  # [HISTORY] local feature
 
 st.set_page_config(page_title="Cowork", layout="wide", initial_sidebar_state="collapsed")
 
@@ -214,6 +215,7 @@ def render_sidebar():
             st.session_state.portal_wait = tuple(n for _, n, _ in agent.list_llms())
             _sp(); st.rerun(scope="app")
 with st.sidebar: render_sidebar()
+render_history_section(st, extract_ui_messages, agent)  # [HISTORY]
 
 def fold_turns(text):
     """Return list of segments: [{'type':'text','content':...}, {'type':'fold','title':...,'content':...}]"""

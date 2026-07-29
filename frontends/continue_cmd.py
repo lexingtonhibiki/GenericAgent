@@ -255,12 +255,12 @@ def _preview_from_file(path):
     if cands:
         s = ' '.join(cands[-1].split())
         if s and '=== ' not in s and '"role"' not in s and len(s) <= 200:
-            return s
+            return s.replace('\\n', ' ').replace('\\t', ' ').replace('\\r', ' ')
     # Summary invalid/absent -> last real user prompt (JSON-aware, skips anchors;
     # scans Prompt blocks directly so response-less sessions still preview).
     lu = _last_user(tail_s) or _last_user(head.decode('utf-8', errors='replace'))
     if lu:
-        return ' '.join(lu.split())[:120]
+        return ' '.join(lu.split())[:120].replace('\\n', ' ').replace('\\t', ' ').replace('\\r', ' ')
     return ''
 
 
@@ -494,7 +494,7 @@ def format_list(sessions, limit=20):
     if not sessions: return '❌ 没有可恢复的历史会话'
     lines = ['**可恢复会话**（输入 `/continue N` 恢复第 N 个）：', '']
     for i, (_, mtime, first, n) in enumerate(sessions[:limit], 1):
-        preview = _escape_md((first or '（无法预览）').replace('\n', ' ')[:60])
+        preview = _escape_md((first or '（无法预览）').replace('\n', ' ').replace('\\n', ' ').replace('\\t', ' ').replace('\\r', ' ')[:60])
         lines.append(f'{i}. `{_rel_time(mtime)}` · **{n} 轮** · {preview}')
     return '\n'.join(lines)
 
