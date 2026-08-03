@@ -16,10 +16,14 @@ from functools import lru_cache
 from datetime import timedelta
 import agentmain, llmcore
 from agentmain import GenericAgent
-import chatapp_common  # activate /continue command (monkey patches GeneraticAgent)
-from continue_cmd import handle_frontend_command, reset_conversation, list_sessions, extract_ui_messages
-from btw_cmd import handle_frontend_command as btw_handle_frontend
-from export_cmd import last_assistant_text, export_to_temp, wrap_for_clipboard
+try:  # optional slash cmds; missing modules must not block main chat
+    import chatapp_common  # monkey-patches GenericAgent: /continue /btw /review
+    from continue_cmd import handle_frontend_command, reset_conversation, list_sessions, extract_ui_messages
+    from btw_cmd import handle_frontend_command as btw_handle_frontend
+    from export_cmd import last_assistant_text, export_to_temp, wrap_for_clipboard
+    _SLASH = True
+except ImportError:
+    _SLASH = False
 
 st.set_page_config(page_title="Cowork", layout="wide", initial_sidebar_state="collapsed")
 
@@ -410,10 +414,18 @@ if prompt:
         st.session_state.current_prompt = ""
         st.session_state.last_reply_time = int(time.time())
         st.rerun()
+    def _slash_missing(name):
+        st.session_state.messages.extend([
+            {"role": "user", "content": cmd, "time": ts},
+            {"role": "assistant", "content": f"❌ `{name}` 模块未安装", "time": ts},
+        ])
+        _reset_and_rerun()
     if cmd == "/new":
+        if not _SLASH: _slash_missing('continue_cmd')
         st.session_state.messages[:] = [{"role": "assistant", "content": reset_conversation(agent), "time": ts}]
         _reset_and_rerun()
     if cmd.startswith("/continue"):
+        if not _SLASH: _slash_missing('continue_cmd')
         m = re.match(r'/continue\s+(\d+)\s*$', cmd.strip())
         sessions = list_sessions(exclude_pid=os.getpid()) if m else []
         idx = int(m.group(1)) - 1 if m else -1
@@ -426,6 +438,7 @@ if prompt:
         else: st.session_state.messages.extend([{"role": "user", "content": cmd, "time": ts}] + tail)
         _reset_and_rerun()
     if cmd.startswith("/btw"):
+        if not _SLASH: _slash_missing('btw_cmd')
         answer = btw_handle_frontend(agent, cmd)  # sync; bypasses put_task → main agent.run() untouched
         st.session_state.messages.extend([
             {"role": "user", "content": prompt, "time": ts},
@@ -443,10 +456,12 @@ if prompt:
                 "- `/export <文件名>` — 导出到 `temp/<文件名>`（默认 .md 后缀）\n"
                 "- `/export all` — 显示完整对话日志路径"
             )
-        elif sub_lower == "all":
+        elif sub_lower == "all":  # only needs agent.log_path
             log = agent.log_path
             result = (f"📂 完整对话日志:\n\n`{log}`" if os.path.isfile(log)
                       else f"❌ 当前会话尚无日志文件")
+        elif not _SLASH:
+            result = "❌ `export_cmd` 模块未安装"
         else:
             text = last_assistant_text(agent)
             if not text:
