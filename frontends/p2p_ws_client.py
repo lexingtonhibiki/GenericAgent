@@ -68,17 +68,25 @@ _FLAG_ZIP = 0x01
 
 _FLAG_TEXT = 0x02
 
+def _pub_raw(pk):
+    """X25519 公钥原始 32 字节; 兼容 cryptography<40 (Android Chaquopy 无 public_bytes_raw)。"""
+    try:
+        return pk.public_bytes_raw()
+    except AttributeError:
+        from cryptography.hazmat.primitives import serialization as _ser
+        return pk.public_bytes(_ser.Encoding.Raw, _ser.PublicFormat.Raw)
+
 def keypair():
     """生成一次性 X25519 密钥对，返回 (私钥, 公钥字节)。"""
     sk = X25519PrivateKey.generate()
-    return sk, sk.public_key().public_bytes_raw()
+    return sk, _pub_raw(sk.public_key())
 
 def session_key(sk, peer_pub: bytes) -> bytes:
     """ECDH + HKDF 派生 32 字节会话密钥。
 
     salt 取两个公钥排序后拼接，双方算出同一个值，且把密钥绑定到本次配对。
     """
-    mine = sk.public_key().public_bytes_raw()
+    mine = _pub_raw(sk.public_key())
     salt = b"".join(sorted([mine, peer_pub]))
     shared = sk.exchange(X25519PublicKey.from_public_bytes(peer_pub))
     return HKDF(
