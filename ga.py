@@ -208,15 +208,15 @@ def file_patch(path: str, old_content: str, new_content: str):
     """在文件中寻找唯一的 old_content 块并替换为 new_content"""
     path = str(Path(path).resolve())
     try:
-        if not os.path.exists(path): return {"status": "error", "msg": "文件不存在"}
+        if not os.path.exists(path): return {"status": "error", "msg": "file not found"}
         with open(path, 'r', encoding='utf-8') as f: full_text = f.read()
-        if not old_content: return {"status": "error", "msg": "old_content 为空，请确认 arguments"}
+        if not old_content: return {"status": "error", "msg": "old_content is blank"}
         count = full_text.count(old_content)
-        if count == 0: return {"status": "error", "msg": "未找到匹配的旧文本块，建议：先用 file_read 确认当前内容，再分小段进行 patch。若多次失败则询问用户，严禁自行使用 overwrite 或代码替换。"}
-        if count > 1: return {"status": "error", "msg": f"找到 {count} 处匹配，无法确定唯一位置。请提供更长、更具体的旧文本块以确保唯一性。建议：包含上下文行来增强特征，或分小段逐个修改。"}
+        if count == 0: return {"status": "error", "msg": "old_content is not found. Suggestion: use file_read to check current file content, make more small patches. Don't huge overwrite (even with code)"}
+        if count > 1: return {"status": "error", "msg": f"find {count} matches, unable to determine unique position. Provide a longer, more specific old_content to ensure uniqueness. Suggestion: include context lines to enhance features, or modify in smaller segments."}
         updated_text = full_text.replace(old_content, new_content)
         with open(path, 'w', encoding='utf-8', newline=_file_newline(path)) as f: f.write(updated_text)
-        return {"status": "success", "msg": "文件局部修改成功"}
+        return {"status": "success", "msg": "file patched successfully"}
     except Exception as e: return {"status": "error", "msg": str(e)}
 
 _read_dirs = set()
@@ -312,7 +312,8 @@ class GenericAgentHandler(BaseHandler):
         cwd = os.path.normpath(os.path.abspath(raw_path))
         code_cwd = os.path.normpath(self.cwd)
         maxlen = self._get_tool_maxlen(10000, args)
-        if code_type == 'python' and _arg(args, "inline_eval", False, bool):
+        if timeout > 600: result = '[ERROR] Timeout must be <= 600 seconds; code not executed. Run time-consuming code in the background instead of waiting for it to finish in the foreground, verify it started successfully, and monitor it until completion or failure.'
+        elif code_type == 'python' and _arg(args, "inline_eval", False, bool):
             ns = {'handler':self, 'parent':self.parent, 'history':json.dumps(self.parent.llmclient.backend.history)}
             old_cwd = os.getcwd()
             try:
@@ -481,11 +482,11 @@ class GenericAgentHandler(BaseHandler):
         thinking = getattr(response, 'thinking', '') or ""
         if not response or (not content.strip() and not thinking.strip()):
             yield "[Warn] LLM returned an empty response. Retrying...\n"
-            return self._retry_or_exit("[System] Blank response, regenerate and tooluse")
+            return self._retry_or_exit("[ERROR] Blank response, regenerate and tooluse")
         if '[!!! 流异常中断' in content[-100:] or '!!!Error:' in content[-100:] or content.endswith('</summary>'):
-            return self._retry_or_exit("[System] Incomplete response. Regenerate and tooluse.")
+            return self._retry_or_exit("[ERROR] Incomplete response. Regenerate and tooluse.")
         if 'max_tokens !!!]' in content[-100:]:
-            return self._retry_or_exit("[System] max_tokens limit reached. Use multi small steps to do it.")
+            return self._retry_or_exit("[ERROR] max_tokens limit reached. Use multi small steps to do it.")
         
         if self._in_plan_mode() and any(kw in content for kw in ['任务完成', '全部完成', '已完成所有', '🏁']):
             if 'VERDICT' not in content and '[VERIFY]' not in content and '验证subagent' not in content:
@@ -570,21 +571,20 @@ class GenericAgentHandler(BaseHandler):
     def turn_end_callback(self, response, tool_calls, tool_results, turn, next_prompt, exit_reason):
         _c = re.sub(r'```.*?```|<thinking>.*?</thinking>', '', response.content, flags=re.DOTALL)
         rsumm = re.search(r"<summary>(.*?)</summary>", _c, re.DOTALL)
-        if rsumm: summary = rsumm.group(1).strip()
-        else:
-            tc = tool_calls[0]; clean_args = {k: v for k, v in tc['args'].items() if not k.startswith('_')}   # at least one because no_tool
-            summary = _c.strip() or smart_format("直接回答了用户问题" if tc['tool_name'] == 'no_tool' else f"{tc['tool_name']}, args: {clean_args}", max_str_len=40)
-            next_prompt += "\n\n\n[SYSTEM] 必须在回复文本中包含<summary>！\n\n"
-        summary = smart_format(summary.replace('\n', ''), max_str_len=80)
-        self.history_info.append(f'[Agent] {summary}')
+        raw = (rsumm.group(1) if rsumm else _c).strip()
+        if raw:
+            summary = smart_format(raw.replace('\n', ''), max_str_len=80)
+            self.history_info.append('[Agent] ' + summary)
+        if not rsumm and tool_calls and tool_calls[0]['tool_name'] != 'no_tool':
+            next_prompt += "\n\n\n[TIPS] 必须在回复文本中包含<summary>！\n\n"
         _plan = self._in_plan_mode()
 
         if turn % 175 == 0 and (not _plan):
             next_prompt += f"\n\n[DANGER] Turn {turn}. Must call ask_user to summarize progress and get direction. No more blind retries."
         elif turn % 13 == 0:
-            next_prompt += f"\n\n[SYSTEM] Turn {turn}. Call update_working_checkpoint to save key context. Stop ineffective retries; if no progress, switch strategy: 1) Probe physical boundaries 2) **Re-read relevant SOPs**"
+            next_prompt += f"\n\n[DANGER] Turn {turn}. Call update_working_checkpoint to save key context. Stop ineffective retries; if no progress, switch strategy: 1) Probe physical boundaries 2) **Re-read relevant SOPs**"
         elif turn % 31 == 0:
-            next_prompt += f"\n\n[SYSTEM] Turn {turn}. Write checkpoints/key findings/tried approaches to a **file** for future reference (not only working_checkpoint!). Avoid losing critical info."
+            next_prompt += f"\n\n[DANGER] Turn {turn}. Write checkpoints/key findings/tried approaches to a **file** for future reference (not only working_checkpoint!). Avoid losing critical info."
         elif turn % 10 == 0: next_prompt += get_global_memory()
 
         if _plan and turn >= 10 and turn % 5 == 0:
