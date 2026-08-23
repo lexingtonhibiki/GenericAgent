@@ -1,6 +1,6 @@
-# Windows Desktop E2E
+# Windows Desktop release qualification
 
-This folder contains the Windows validation harness for the portable desktop package. It simulates the user path:
+This folder contains the Windows qualification runner for the portable desktop package. It exercises:
 
 1. Download a GitHub Actions artifact, or use a local zip.
 2. Verify commit, SHA-256, and required package files.
@@ -8,7 +8,7 @@ This folder contains the Windows validation harness for the portable desktop pac
 4. Launch `GenericAgent.exe` directly.
 5. Wait for first-run prepare, bridge identity, and bootstrap `ready`.
 6. In `Full` mode, inject an unknown process on port `14168`, verify `port_conflict`, release it, and retry from setup.
-7. Run the shared production-package contract with the embedded Python: package-owned bridge plus
+7. Run the shared production-package qualification with the embedded Python: package-owned bridge plus
    external `GA_ROOT`, fake-model chat, upload, memory import, warm restart, a second foreign-port
    assertion, relocation into a path with spaces and Chinese characters, stale override fallback,
    optional P2P degradation, and process/settings cleanup.
@@ -16,7 +16,7 @@ This folder contains the Windows validation harness for the portable desktop pac
 ## Full Run
 
 ```powershell
-.\frontends\desktop\e2e\windows\Invoke-WindowsUserJourney.ps1 `
+.\frontends\desktop\release_qualification\windows\Invoke-WindowsReleaseQualification.ps1 `
   -Repo abraxas914/GenericAgent `
   -RunId 29071095889 `
   -ExpectedCommit 696ddfc `
@@ -29,12 +29,12 @@ Use `-PackageZip C:\path\GenericAgent-Desktop-Windows-Portable.zip` when the art
 
 - `Smoke`: package verification, extraction, first launch, prepare marker, bridge identity, bootstrap ready.
 - `FailureOnly`: assumes the package can be extracted and focuses on the unknown port conflict and setup retry path.
-- `Full`: runs `Smoke`, the native retry failure path, and the complete production package journey.
+- `Full`: runs `Smoke`, the native retry failure path, and the complete production package qualification.
   It requires `-ExpectedCommit` so the bridge build identity is tied to the candidate SHA.
 
 ## Manual Checks
 
-The script collects screenshots and writes these checklist items to the report for the tester to mark externally:
+The script collects screenshots and writes these checklist items to the report for separate human review:
 
 - Loading, prepare, setup, and main windows always show the Windows titlebar.
 - Right side has exactly minimize, maximize, and close.
@@ -46,6 +46,9 @@ The script collects screenshots and writes these checklist items to the report f
 - The native directory picker opens and returns a real directory.
 - The shortcut self-heals after the portable folder is moved.
 - Loading, fallback, and main React pages render through the Tauri resource protocol.
+
+Screenshot capture and checklist values are supporting evidence. They do not determine the automated
+qualification result or need to be edited to `pass` before the evidence verifier runs.
 
 ## Report
 

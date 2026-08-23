@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Combine three real-package reports and enforce the P2 candidate evidence gate."""
+"""Combine three package reports and enforce the automated release evidence gate."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def assert_report(name: str, report: dict[str, Any], expected_commit: str) -> li
     if report.get("releaseVersion") != "0.2.0":
         failures.append(f"{name}: release version is not 0.2.0")
     if report.get("success") is not True:
-        failures.append(f"{name}: automated journey did not pass")
+        failures.append(f"{name}: automated qualification did not pass")
     if not str(report.get("artifact", {}).get("sha256", "")):
         failures.append(f"{name}: artifact SHA-256 is missing")
     checks = report.get("checks", {})
@@ -120,11 +120,6 @@ def assert_report(name: str, report: dict[str, Any], expected_commit: str) -> li
     missing_bootstrap = sorted(required_bootstrap - set(report.get("bootstrap", {})))
     if missing_bootstrap:
         failures.append(f"{name}: missing bootstrap evidence {missing_bootstrap}")
-    pending = [key for key, value in report.get("manualChecklist", {}).items() if value != "pass"]
-    if pending:
-        failures.append(f"{name}: manual checklist is incomplete: {pending}")
-    if len(report.get("screenshots", [])) < 2 and name != "windows":
-        failures.append(f"{name}: fewer than two screenshots were recorded")
     return failures
 
 
@@ -154,12 +149,6 @@ def main() -> int:
         failures.append("windows native retry path did not pass")
     if windows_native.get("checks", {}).get("settingsRestored") is not True:
         failures.append("windows native wrapper did not restore the original settings file")
-    native_pending = [
-        key for key, value in windows_native.get("manualChecklist", {}).items() if value != "pass"
-    ]
-    if native_pending:
-        failures.append(f"windows native manual checklist is incomplete: {native_pending}")
-
     manifest = {
         "schemaVersion": 1,
         "candidateCommit": args.expected_commit,

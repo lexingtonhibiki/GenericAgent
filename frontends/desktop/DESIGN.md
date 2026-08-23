@@ -92,5 +92,9 @@ platform requirement as a new release blocker nor claims to have changed operati
   path/identity/port/diagnostic/bootstrap behavior.
 - Native package contract: Linux Tauri build smoke plus the platform release workflow.
 
+Optional platform release qualification lives under `frontends/desktop/release_qualification/**`.
+Its automated evidence gate validates package behavior and cleanup; screenshots and manual visual checklists
+remain separate release-owner review material rather than CI pass/fail inputs.
+
 The richer React unit/browser/native E2E suites remain in the fork and run before its accepted `main` SHA is
 used to refresh the generated upstream distribution.

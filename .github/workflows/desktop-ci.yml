@@ -93,11 +93,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: frontends/desktop/e2e/requirements.txt
+          cache-dependency-path: frontends/tests/requirements.txt
       - name: Install Desktop test dependencies
-        run: python -m pip install -r frontends/desktop/e2e/requirements.txt
+        run: python -m pip install -r frontends/tests/requirements.txt
       - name: Run bridge, conductor, cost and backup contracts
-        run: python -m pytest frontends/tests -q
+        run: >-
+          python -m pytest frontends/tests -q
+          --ignore=frontends/tests/test_release_qualification.py
+      - name: Run release qualification tooling contracts
+        if: matrix.python-version == '3.12'
+        run: python -m pytest frontends/tests/test_release_qualification.py -q
 
   rust-contracts:
     name: Rust ${{ matrix.feature.name }}

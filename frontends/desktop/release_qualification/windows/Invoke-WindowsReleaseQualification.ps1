@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 2.0
 
 if (-not $WorkDir) {
-    $WorkDir = Join-Path $env:TEMP ("ga-desktop-e2e\run-" + $RunId)
+    $WorkDir = Join-Path $env:TEMP ("ga-desktop-release-qualification\run-" + $RunId)
 }
 
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -552,7 +552,7 @@ function Invoke-ProductionContractJourney(
     if (-not (Test-Path -LiteralPath $python)) {
         Fail "Could not create an out-of-package Python for the relocation journey"
     }
-    $driver = [System.IO.Path]::GetFullPath((Join-Path $ScriptRoot "..\package\real_package_journey.py"))
+    $driver = [System.IO.Path]::GetFullPath((Join-Path $ScriptRoot "..\run_release_qualification.py"))
     $contractReport = Join-Path $ReportDir "production-contract"
     $contractWork = Join-Path $WorkDir "production-contract-work"
     $relocated = Join-Path $ExtractDir "relocated\含 空格\GenericAgent 包"
@@ -566,8 +566,7 @@ function Invoke-ProductionContractJourney(
         --relocated-root $relocated `
         --report-dir $contractReport `
         --work-dir $contractWork `
-        --allow-user-settings-mutation `
-        --screenshots-optional
+        --allow-user-settings-mutation
     if ($LASTEXITCODE -ne 0) {
         Fail "Production package contract journey failed; see $contractReport"
     }
@@ -597,7 +596,7 @@ try {
     $Report.environment.initialPortState = @(Get-PortState)
     $Report.environment.initialProcesses = @(Get-GaProcesses)
     if ($Report.environment.initialPortState.Count -gt 0) {
-        Fail "127.0.0.1:14168 was already occupied before the package journey"
+        Fail "127.0.0.1:14168 was already occupied before release qualification"
     }
     $script:PortWasFreeAtStart = $true
 
@@ -623,7 +622,7 @@ try {
     $script:RunSucceeded = $true
     Save-Report
     Write-Host ""
-    Write-Host "E2E report: $ReportPath"
+    Write-Host "Release qualification report: $ReportPath"
 } catch {
     $Report.success = $false
     Add-Failure $_.Exception.Message

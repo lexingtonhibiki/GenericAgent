@@ -23,9 +23,9 @@ done
 artifact="$(realpath "$artifact")"
 [[ -f "$artifact" ]] || { echo "Artifact not found: $artifact" >&2; exit 1; }
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-driver="$script_dir/../package/real_package_journey.py"
+driver="$script_dir/../run_release_qualification.py"
 if [[ -z "$work_dir" ]]; then
-  work_dir="$(mktemp -d -t ga-linux-package-e2e.XXXXXX)"
+  work_dir="$(mktemp -d -t ga-linux-release-qualification.XXXXXX)"
 else
   mkdir -p "$work_dir"
   work_dir="$(realpath "$work_dir")"

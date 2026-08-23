@@ -154,7 +154,7 @@ jobs:
             --exclude='./frontends/desktop/src' \
             --exclude='./frontends/desktop/public' \
             --exclude='./frontends/desktop/scripts' \
-            --exclude='./frontends/desktop/e2e' \
+            --exclude='./frontends/desktop/release_qualification' \
             --exclude='./frontends/desktop/tests' \
             --exclude='./frontends/desktop/testing' \
             --exclude='./frontends/desktop/spec' \
@@ -386,7 +386,7 @@ jobs:
             --exclude='./frontends/desktop/src' \
             --exclude='./frontends/desktop/public' \
             --exclude='./frontends/desktop/scripts' \
-            --exclude='./frontends/desktop/e2e' \
+            --exclude='./frontends/desktop/release_qualification' \
             --exclude='./frontends/desktop/tests' \
             --exclude='./frontends/desktop/testing' \
             --exclude='./frontends/desktop/spec' \
@@ -667,7 +667,7 @@ jobs:
             --exclude='frontends/desktop/src' \
             --exclude='frontends/desktop/public' \
             --exclude='frontends/desktop/scripts' \
-            --exclude='frontends/desktop/e2e' \
+            --exclude='frontends/desktop/release_qualification' \
             --exclude='frontends/desktop/tests' \
             --exclude='frontends/desktop/testing' \
             --exclude='frontends/desktop/spec' \

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform release-package journey for GenericAgent Desktop 2.0.
+"""Cross-platform release qualification for GenericAgent Desktop 2.0.
 
 This runner deliberately exercises a production binary and its packaged runtime.  It does
 not import product code from the checkout and it does not require network access.  The
@@ -702,7 +702,7 @@ class Journey:
             source_sessions / f"{imported_sid}.json",
             {
                 "id": imported_sid,
-                "title": "P2 imported",
+                "title": "Qualification imported",
                 "messages": [],
                 "msg_seq": 0,
                 "cwd": str(source),
@@ -981,9 +981,6 @@ class Journey:
                 raise JourneyFailure(f"first launch modified the signed .app: {changed[:20]}")
             self.report["checks"]["macAppImmutable"] = True
 
-        if not self.args.screenshots_optional and len(self.screenshots) < 2:
-            raise JourneyFailure("real-package journey did not capture ready and failure screenshots")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -999,7 +996,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-timeout", type=float, default=300)
     parser.add_argument("--allow-user-settings-mutation", action="store_true")
     parser.add_argument("--allow-external-package", action="store_true")
-    parser.add_argument("--screenshots-optional", action="store_true")
     return parser.parse_args()
 
 
@@ -1013,7 +1009,7 @@ def main() -> int:
         return 0
     except BaseException as error:  # retain evidence for assertion and unexpected failures
         journey.report["failures"].append(f"{type(error).__name__}: {error}")
-        print(f"real package journey failed: {error}", file=sys.stderr)
+        print(f"release qualification failed: {error}", file=sys.stderr)
         return 1
     finally:
         with contextlib.suppress(BaseException):

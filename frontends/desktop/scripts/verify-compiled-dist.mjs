@@ -106,12 +106,7 @@ function verifyTrackedSourceBoundary() {
   const forbidden = tracked.filter((file) => (
     file.startsWith('frontends/desktop/src/')
     || file.startsWith('frontends/desktop/public/')
-    || (file.startsWith('frontends/desktop/e2e/')
-      && file !== 'frontends/desktop/e2e/requirements.txt'
-      && !file.startsWith('frontends/desktop/e2e/package/')
-      && !file.startsWith('frontends/desktop/e2e/linux/')
-      && !file.startsWith('frontends/desktop/e2e/macos/')
-      && !file.startsWith('frontends/desktop/e2e/windows/'))
+    || file.startsWith('frontends/desktop/e2e/')
     || /^frontends\/desktop\/(?:index|loading|setup)\.html$/.test(file)
     || /^frontends\/desktop\/(?:vite\.config\.[^/]+|tsconfig(?:\.[^/]+)?\.json|package-lock\.json)$/.test(file)
   ));
@@ -238,6 +233,9 @@ async function verifyReleaseContract() {
     if (!(body.includes("--exclude='./frontends/desktop/dist'")
           || body.includes("--exclude='frontends/desktop/dist'"))) {
       fail(`${job} must not duplicate Tauri-embedded dist inside runtime/app`);
+    }
+    if (!/--exclude='(?:\.\/)?frontends\/desktop\/release_qualification'/.test(body)) {
+      fail(`${job} must not package release qualification tooling inside runtime/app`);
     }
     if (!(body.includes('test ! -e "$RUNTIME/app/frontends/desktop/dist"')
           || body.includes('test ! -e "$RUNTIME_SRC/app/frontends/desktop/dist"'))) {

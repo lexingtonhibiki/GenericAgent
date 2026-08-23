@@ -23,9 +23,9 @@ done
 artifact="$(cd "$(dirname "$artifact")" && pwd)/$(basename "$artifact")"
 [[ -f "$artifact" ]] || { echo "Artifact not found: $artifact" >&2; exit 1; }
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-driver="$script_dir/../package/real_package_journey.py"
+driver="$script_dir/../run_release_qualification.py"
 if [[ -z "$work_dir" ]]; then
-  work_dir="$(mktemp -d -t ga-macos-package-e2e.XXXXXX)"
+  work_dir="$(mktemp -d -t ga-macos-release-qualification.XXXXXX)"
 else
   mkdir -p "$work_dir"
   work_dir="$(cd "$work_dir" && pwd)"
@@ -33,7 +33,7 @@ fi
 report_dir="$work_dir/report"
 driver_work="$work_dir/driver-work"
 mount_point="$work_dir/dmg"
-install_app="/Applications/GenericAgent P2 E2E $$.app"
+install_app="/Applications/GenericAgent Release Qualification $$.app"
 mounted=0
 mkdir -p "$report_dir" "$driver_work" "$mount_point"
 

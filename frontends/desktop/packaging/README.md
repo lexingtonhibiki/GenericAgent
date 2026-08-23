@@ -65,7 +65,7 @@ frontends/desktop/packaging/
 
 These controls do not make the packages bit-for-bit reproducible. Runner images, Ubuntu packages, the Windows
 SDK/UCRT input, platform wheels, and native packaging metadata can change or contain timestamps. Candidate
-artifact SHA-256 values and real-package journeys remain the evidence for a particular build.
+artifact SHA-256 values and release-qualification reports remain the evidence for a particular build.
 
 ## Candidate artifacts and publication
 
@@ -107,8 +107,8 @@ retain the documented context-menu / Privacy & Security opening path.
 - `npm run test:dist` verifies required compiled entries, references, source leakage, dead assets, the notice hash,
   version/CSP/E2E isolation, source provenance, and the atomic release contract.
 - `python -m pytest frontends/tests` verifies Desktop bridge, conductor, model/session/upload behavior, the
-  Desktop-only cost ledger, transactional data import, package-evidence parsing, owned service/port behavior,
-  `GA_ROOT`, and Tauri security contracts.
+  Desktop-only cost ledger, transactional data import, release-qualification tooling, owned service/port
+  behavior, `GA_ROOT`, and Tauri security contracts.
 - Rust formatting, clippy, production/E2E tests, and a Tauri `--no-bundle` build validate the native shell against
   the tracked renderer.
 - Shell, Python, PowerShell, YAML, action pinning, boundary diff, and conflict checks run before delivery.

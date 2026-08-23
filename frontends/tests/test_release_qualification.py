@@ -23,12 +23,12 @@ def load_module(name: str, relative: str):
 
 
 journey = load_module(
-    "real_package_journey",
-    "frontends/desktop/e2e/package/real_package_journey.py",
+    "run_release_qualification",
+    "frontends/desktop/release_qualification/run_release_qualification.py",
 )
 evidence = load_module(
-    "verify_candidate_evidence",
-    "frontends/desktop/e2e/package/verify_candidate_evidence.py",
+    "verify_release_evidence",
+    "frontends/desktop/release_qualification/verify_release_evidence.py",
 )
 
 
@@ -80,13 +80,63 @@ def test_candidate_report_contract_accepts_complete_platform_evidence():
     assert evidence.assert_report("macos", complete_report("macos"), "abc1234") == []
 
 
-def test_candidate_report_contract_rejects_incomplete_manual_and_commit_evidence():
+def test_automated_gate_ignores_manual_evidence_but_rejects_commit_mismatch():
     report = complete_report()
-    report["expectedCommit"] = "different"
     report["manualChecklist"]["nativeVisuals"] = "pending"
+    report["screenshots"] = []
+    assert evidence.assert_report("linux", report, "abc1234") == []
+
+    report["expectedCommit"] = "different"
     failures = evidence.assert_report("linux", report, "abc1234")
     assert any("commit" in failure for failure in failures)
-    assert any("manual checklist" in failure for failure in failures)
+
+
+def test_combined_gate_ignores_platform_and_windows_native_manual_review(
+    tmp_path, monkeypatch
+):
+    report_paths = {}
+    for platform in ("windows", "linux", "macos"):
+        report = complete_report(platform)
+        report["manualChecklist"] = {"nativeVisuals": "pending"}
+        report["screenshots"] = []
+        path = tmp_path / f"{platform}.json"
+        path.write_text(json.dumps(report), encoding="utf-8")
+        report_paths[platform] = path
+
+    windows_native = tmp_path / "windows-native.json"
+    windows_native.write_text(
+        json.dumps(
+            {
+                "success": True,
+                "checks": {"portConflictRecovery": True, "settingsRestored": True},
+                "manualChecklist": {"nativeVisuals": "manual"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "manifest.json"
+    monkeypatch.setattr(
+        evidence.sys,
+        "argv",
+        [
+            "verify_release_evidence.py",
+            "--expected-commit",
+            "abc1234",
+            "--windows",
+            str(report_paths["windows"]),
+            "--linux",
+            str(report_paths["linux"]),
+            "--macos",
+            str(report_paths["macos"]),
+            "--windows-native-report",
+            str(windows_native),
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert evidence.main() == 0
+    assert json.loads(output.read_text(encoding="utf-8"))["gate"] == "pass"
 
 
 def test_candidate_report_contract_rejects_partial_or_unowned_conductor_evidence():
