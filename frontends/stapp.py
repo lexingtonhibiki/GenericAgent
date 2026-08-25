@@ -284,16 +284,15 @@ def _poll_main_task(max_items=256):
 
 def _render_stat_badge(is_running):
     if 'task_start_ts' not in st.session_state or not hasattr(llmcore, 'STATS'): return
-    end_ts = time.time() if is_running else st.session_state.get('task_end_ts', time.time())
+    now = time.time()
+    end_ts = now if is_running else st.session_state.get('task_end_ts', now)
     secs = max(0, int(end_ts - st.session_state.task_start_ts))
     stats = dict(llmcore.STATS)
     short = lambda n: f'{n / 1000:.0f}k' if n >= 1000 else str(n)
     _p = []
     if stats.get('t_start') and stats.get('t_ttft') is not None and stats['t_ttft'] != stats['t_start']:
         _p.append(f"ttft{stats['t_ttft'] - stats['t_start']:.1f}s")
-    _gen = (stats['t_end'] - max(stats['t_ttft'], stats['t_start'])) if (stats.get('t_end') and stats.get('t_ttft') is not None) else None
-    if _gen and stats.get('out'):
-        _p.append(f"{stats['out'] / _gen:.0f}t/s")
+    if stats.get('tps'): _p.append(f"{stats['tps']:.0f}t/s")
     _tail = (' │ ' + '·'.join(_p)) if _p else ''
     usage = ((f"{stats['session']} │ " if stats.get('session') else '') +
              f"{short(stats['ctx'])} chars·{stats['msgs']}msgs │ "
