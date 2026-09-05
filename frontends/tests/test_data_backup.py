@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import stat
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -17,6 +18,21 @@ from frontends.data_backup import (
     materialize_import_source,
     merge_data_files,
 )
+
+
+def _symlinks_supported() -> bool:
+    """Windows without Developer Mode denies symlink creation (winerror 1314)."""
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            target = Path(d) / "t"
+            target.write_text("", encoding="utf-8")
+            (Path(d) / "l").symlink_to(target)
+            return True
+    except (OSError, NotImplementedError):
+        return False
+
+
+_SYMLINKS_SUPPORTED = _symlinks_supported()
 
 
 def _seed_data(root: Path) -> None:
@@ -64,6 +80,10 @@ class TestDataBackupExport:
         assert "agentmain.py" not in names
         assert "logs/bridge.log" not in names
 
+    @pytest.mark.skipif(
+        not _SYMLINKS_SUPPORTED,
+        reason="filesystem denies symlink creation (Windows without dev mode)",
+    )
     def test_rejects_symlinks_instead_of_reading_through_them(self, tmp_path: Path):
         source = tmp_path / "source"
         (source / "memory").mkdir(parents=True)
@@ -656,6 +676,10 @@ class TestDataBackupImport:
         assert racing_target.read_text(encoding="utf-8") == "concurrent"
         assert (target / "memory" / "same.md").read_text(encoding="utf-8") == "old"
 
+    @pytest.mark.skipif(
+        not _SYMLINKS_SUPPORTED,
+        reason="filesystem denies symlink creation (Windows without dev mode)",
+    )
     def test_memory_backup_refuses_symlinked_temp_directory(self, tmp_path: Path):
         source = tmp_path / "source"
         target = tmp_path / "target"
