@@ -24,8 +24,9 @@ ui_detect附送OCR，不要单独使用OCR
 ui_detect 的 bbox 是截图内坐标，点击前必须用 `ClientToScreen(hwnd,(0,0))/dpi_scale + bbox中心` 转屏幕物理坐标
 坐标转换禁用 `GetWindowRect` 或 DWM 窗口矩形直接加截图坐标（含标题栏/边框/阴影会错位）
 ljqCtrl.Click 后会返回像素/前台变化，0% 或近 0% 变化立即停下诊断，禁止盲目重试。
-ljqCtrl 失效或目标为网络游戏时，必须使用硬件键鼠 Xbananakb / Arduino Leonardo（如有）
-网络游戏除非用户明确允许，严禁普通键鼠事件，必须硬件执行。
+ljqCtrl 失效或目标为网络游戏时，禁止普通键鼠事件；硬件级键鼠方案本机未配置，需用户提供设备后再启用。网络游戏除非用户明确允许，严禁普通键鼠事件，必须硬件执行。
+
+后台操作（窗口不激活、不抢焦点）：`import ljqCtrlBg` — `ClickBg/PressBg/TypeTextBg/SetTextBg/GetTextBg(hwnd_or_name, ...)`，坐标为**客户区像素**（`ClientToScreen` 可互转），PostMessage 实现、不移动真实光标；后台截图用 `GrabWindowBg/GrabClientBg`（WGC/PrintWindow 自动回退）。仅前台链失效或用户明确要求后台时使用；post 消息是 best-effort，**操作后必须截图验证**。
 
 临时截图/可视化文件用后清理，或固定文件名覆盖，避免堆积。
 ui_detect 可跨端复用；手机端沿用本原则时，UIA 换成 ui dump/adb_ui，ljqCtrl 控制换成 adb

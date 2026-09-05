@@ -26,6 +26,10 @@ CONFLICT_PRONE = [
     'frontends/chatapp_common.py',
     'frontends/tests/test_data_backup.py',
     'frontends/tests/test_release_qualification.py',
+    'memory/ljqCtrl_sop.md',
+    'memory/computer_use.md',
+    'memory/incubator_sop.md',
+    'memory/review_sop.md',
     'memory/goal_hive_sop.md',
     '.gitignore',
 ]

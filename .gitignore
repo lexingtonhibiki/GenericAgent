@@ -149,6 +149,10 @@ reflect/*
 # （以 _ 开头不会被加载器自动轮询）。去掉下划线/示例后缀复制为 email.py / lark.py 即启用。
 frontends/conductor_im_plugins/*
 
+# Spec SDD 模板（spec_sop.md 配套，本地特性）
+!memory/spec_templates/
+!memory/spec_templates/**
+
 # Universal: never track __pycache__ anywhere
 **/__pycache__/
 

@@ -15,7 +15,7 @@ memory下大部分文件不适合分发，不要复制 memory 下未被 gitignor
 - `GARoot/*.py` 必须包含根目录所有 `.py`。
 - `GARoot/assets/*.txt *.json` 必须包含 assets 顶层所有 `.txt`/`.json`。
 - `GARoot/memory/` 只取 `.gitignore` 白名单/已允许分发文件；排除 `global_mem.txt`、`global_mem_insight.txt`、`__pycache__/`、`*.pyc`。
-- 按当前清单实测压缩包约153KB/55文件；正常不应超过200KB，文件数不应超过60。
+- 体积红线: 压缩包 ≤200KB 且 ≤60 文件；超出即说明清单被污染（L1/L2 或非白名单文件被打进去了），停下核查。
 
 ## 依赖
 requests beautifulsoup4

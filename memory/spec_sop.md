@@ -2,6 +2,7 @@
 
 **适用场景**：3步以上、需求模糊、需结构化交付 | **不适用**：1-2步简单任务直接做
 **命令入口**：`/specify` → `/plan` → `/tasks` → 现有 plan mode 执行
+**模板**：`memory/spec_templates/{spec,plan,tasks}_template.md` —— 执行到对应阶段时 `file_read` 再填充，**平时勿整读**
 
 ---
 
@@ -42,70 +43,13 @@
 
 1. **创建规格目录**：`mkdir -p specs/<NNN>-<短名>/`
 2. **读宪法**：提取上方 P1-P5 原则作为约束
-3. **填充 spec 模板**：按下方模板创建 `specs/<NNN>-<短名>/spec.md`
+3. **填充 spec 模板**：`file_read memory/spec_templates/spec_template.md`，按其结构创建 `specs/<NNN>-<短名>/spec.md`
 4. **质量自检**：
    - 每个用户故事是否有独立测试方法？
    - 功能需求是否可编号追溯（FR-NNN）？
    - `[NEEDS CLARIFICATION]` 是否 ≤3 个？
    - 是否只写了 WHAT/WHY，没写 HOW？
 5. **用户确认**：`ask_user` 确认 spec.md 后才能继续
-
-### spec.md 模板
-
-```markdown
-# Feature Specification: [FEATURE NAME]
-
-**Feature Branch**: `[###-feature-name]`
-**Created**: [DATE]
-**Status**: Draft
-**Input**: User description: "[USER INPUT]"
-
-## User Scenarios & Testing
-
-### User Story 1 - [Brief Title] (Priority: P1)
-[Describe this user journey in plain language]
-**Why this priority**: [Explain the value]
-**Independent Test**: [How to test independently]
-**Acceptance Scenarios**:
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
-### User Story 2 - [Brief Title] (Priority: P2)
-[Describe this user journey]
-
-### User Story 3 - [Brief Title] (Priority: P3)
-[Describe this user journey]
-
-### Edge Cases
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
-
-## Requirements
-
-### Functional Requirements
-- **FR-001**: System MUST [specific capability]
-- **FR-002**: System MUST [specific capability]
-- **FR-003**: System SHOULD [specific capability]
-
-### Key Entities
-- **[Entity 1]**: [What it represents, key attributes]
-- **[Entity 2]**: [What it represents, relationships]
-
-## Success Criteria
-
-### Measurable Outcomes
-- **SC-001**: [Measurable metric]
-- **SC-002**: [Measurable metric]
-
-## Assumptions
-- [Assumption about target users]
-- [Assumption about scope boundaries]
-
-## NEEDS CLARIFICATION (max 3)
-| # | Question | Impact if Unresolved |
-|---|----------|---------------------|
-| 1 | [Question] | [Impact] |
-```
 
 ---
 
@@ -122,68 +66,13 @@
 3. **探索（复用 plan_sop.md 探索态）**：
    - 启动 subagent 探测环境
    - 产出 `research.md`
-4. **填充 plan 模板**：按下方模板创建 `specs/<NNN>-<短名>/plan.md`
+4. **填充 plan 模板**：`file_read memory/spec_templates/plan_template.md`，按其结构创建 `specs/<NNN>-<短名>/plan.md`
 5. **设计产出**（按需）：
    - `data-model.md`：数据模型
    - `contracts/`：接口契约
    - `quickstart.md`：快速上手
 6. **二次宪法检查**：设计完成后重新检查
 7. **用户确认**：`ask_user` 确认 plan.md
-
-### plan.md 模板
-
-```markdown
-# Implementation Plan: [FEATURE]
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `specs/[###-feature-name]/spec.md`
-
-## Summary
-[Extract from spec: primary requirement + technical approach]
-
-## Technical Context
-**Language/Version**: [e.g., Python 3.13]
-**Primary Dependencies**: [e.g., FastAPI]
-**Storage**: [if applicable]
-**Testing**: [e.g., pytest]
-**Target Platform**: [e.g., Windows]
-**Project Type**: [e.g., library/cli/web-service]
-**Performance Goals**: [domain-specific]
-**Constraints**: [domain-specific]
-
-## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-| Principle | Status | Notes |
-|-----------|--------|-------|
-| P1: Simplicity First | ✅/⚠️/❌ | [notes] |
-| P2: Merge-Friendly | ✅/⚠️/❌ | [notes] |
-| P3: SOP-Driven | ✅/⚠️/❌ | [notes] |
-| P4: Context Efficiency | ✅/⚠️/❌ | [notes] |
-| P5: Verify Before Declare | ✅/⚠️/❌ | [notes] |
-
-## Project Structure
-
-### Documentation (this feature)
-```
-specs/[###-feature]/
-├── spec.md          # Feature specification
-├── plan.md          # This file
-├── research.md      # Phase 0 output
-├── data-model.md    # Phase 1 output (optional)
-├── contracts/       # Phase 1 output (optional)
-└── tasks.md         # Phase 2 output
-```
-
-### Source Code (repository root)
-```
-[Project-specific structure]
-```
-
-## Complexity Tracking
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-```
 
 ---
 
@@ -195,67 +84,12 @@ specs/[###-feature]/
 
 1. **加载设计文档**：plan.md（必需）+ spec.md（必需）+ data-model.md + contracts/
 2. **提取用户故事**：从 spec.md 提取 P1/P2/P3 故事
-3. **生成任务**：按下方模板创建 `specs/<NNN>-<短名>/tasks.md`
+3. **生成任务**：`file_read memory/spec_templates/tasks_template.md`，按其结构创建 `specs/<NNN>-<短名>/tasks.md`
 4. **进入 plan mode**：`code_run({'inline_eval':True, 'script':'handler.enter_plan_mode("specs/<NNN>-<短名>/tasks.md")'})`
-
-### tasks.md 模板
-
-```markdown
-# Tasks: [FEATURE NAME]
-
-**Input**: Design documents from `specs/[###-feature-name]/`
-**Prerequisites**: plan.md (required), spec.md (required)
-
-## Format: `[ID] [P?] [Story] Description`
-- **[P]**: Can run in parallel
-- **[Story]**: Which user story (US1, US2, US3)
-
-## Phase 1: Setup
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize dependencies and configuration
-- [ ] T003 [P] Configure linting and formatting tools
-
-## Phase 2: Foundational
-**CRITICAL**: No user story work can begin until this phase is complete
-- [ ] T004 Setup core infrastructure
-- [ ] T005 [P] Setup shared utilities
-
-## Phase 3: User Story 1 - [Title] (Priority: P1) MVP
-- [ ] T006 [US1] Implement core logic
-- [ ] T007 [US1] Integrate with UI/API
-- [ ] T008 [US1] Verify against acceptance scenarios
-
-## Phase 4: User Story 2 - [Title] (Priority: P2)
-- [ ] T009 [P] [US2] Implement core logic
-- [ ] T010 [US2] Integrate and verify
-
-## Phase N: Polish
-- [ ] T011 Cross-cutting concerns and edge cases
-- [ ] T012 Final verification
-
-## Dependencies & Execution Order
-### Phase Dependencies
-- Setup → Foundational → User Stories → Polish
-### Parallel Opportunities
-- All [P] tasks can run in parallel
-
-## Implementation Strategy
-### MVP First (User Story 1 Only)
-Complete Setup + Foundational + US1 tasks first for immediate value.
-```
 
 ---
 
 ## 与现有 Plan Mode 的衔接
-
-```
-SDD 流程:  /specify → /plan → /tasks
-                              ↓
-现有流程:  探索 → 规划 → 执行 → 验证 → 失败处理
-                    ↑
-              /tasks 产出 tasks.md 直接作为 plan.md 使用
-              enter_plan_mode() 接管执行
-```
 
 - `/specify` 和 `/plan` 是 **Plan Mode 的前置增强**，产出结构化文档
 - `/tasks` 产出的 tasks.md 可直接作为 plan.md 的执行清单
