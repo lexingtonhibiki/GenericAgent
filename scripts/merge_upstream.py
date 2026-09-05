@@ -1,6 +1,6 @@
 """
 GenericAgent — 安全合并上游脚本
-用法: python scripts/merge_upstream.py [--dry-run] [--force]
+用法: python scripts/merge_upstream.py [--dry-run] [--force] [--push]
 
 功能:
   1. fetch upstream
@@ -9,6 +9,7 @@ GenericAgent — 安全合并上游脚本
   4. 执行 merge（保留本地特性）
   5. 检测冲突，提示解决
   6. 验证关键本地特性标记 [HISTORY] [SPECKIT] 仍存在
+  7. --push: 验证通过后普通推送 origin/main（fast-forward；被拒即停，绝不 force）
 
 依赖: git rerere（已启用，自动记忆冲突解决方案）
 """
@@ -23,6 +24,9 @@ CONFLICT_PRONE = [
     'frontends/continue_cmd.py',
     'frontends/stapp.py',
     'frontends/chatapp_common.py',
+    'frontends/tests/test_data_backup.py',
+    'frontends/tests/test_release_qualification.py',
+    'memory/goal_hive_sop.md',
     '.gitignore',
 ]
 
@@ -31,6 +35,8 @@ LOCAL_ONLY = [
     'frontends/history_utils.py',
     'frontends/spec_cmd.py',
     'memory/spec_sop.md',
+    'ga_bridge.cmd',
+    'ga_tui.cmd',
 ]
 
 # 关键标记（验证本地特性未被覆盖）
@@ -91,9 +97,23 @@ def verify_markers():
     return ok
 
 
+def push_main():
+    """普通 fast-forward 推送；被拒即停（远端可能有异动，需人工核对，绝不 force）。"""
+    print("\n[PUSH] git push origin main ...")
+    r = _git('push', 'origin', 'main', check=False)
+    out = (r.stdout.strip() or r.stderr.strip())
+    if out:
+        print('  ' + out.replace('\n', '\n  '))
+    if r.returncode != 0:
+        print("  PUSH REJECTED — 先 git fetch 人工核对远端，勿直接 force。")
+        return False
+    return True
+
+
 def main():
     dry_run = '--dry-run' in sys.argv
     force = '--force' in sys.argv
+    push = '--push' in sys.argv
 
     print("=== GenericAgent Safe Merge ===\n")
 
@@ -106,6 +126,8 @@ def main():
     r = _git('log', '--oneline', 'HEAD..upstream/main', check=False)
     if not r.stdout.strip():
         print("  Already up to date. No new commits from upstream.")
+        if push:
+            push_main()  # 显式 --push 时即使无新提交也执行（解决冲突后重跑的场景）
         return
     commits = r.stdout.strip().split('\n')
     print(f"  {len(commits)} new commits:")
@@ -146,6 +168,7 @@ def main():
             print("    git add .")
             print("    git commit")
             print(f"\n  After resolving, run: python {sys.argv[0]} --verify")
+            print(f"  Then push:            python {sys.argv[0]} --push")
             return
         else:
             print(f"  Merge failed: {r.stderr.strip()}")
@@ -163,6 +186,9 @@ def main():
             return
     else:
         print("  All local features intact.")
+
+    if push and not push_main():
+        sys.exit(1)
 
     print("\n[6/6] Done! Run `git log --oneline -5` to verify.")
 
