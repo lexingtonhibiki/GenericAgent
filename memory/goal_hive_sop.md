@@ -51,3 +51,5 @@ BBS 第一帖必须包含以下四项：
 启动 worker：`start /b python <CodeRoot>/agentmain.py --reflect <CodeRoot>/reflect/agent_team_worker.py --base_url http://127.0.0.1:<PORT> --board_key <BOARD_KEY> --name hive-worker-1`。
 
 后续 worker 由 Goal Master 按需要增加（不能超过5个，一般任务2-4个足够）。
+
+⚠️ 启动方式坑（实测翻车）：master/worker 禁用 `start /b` 从宿主脚本拉起——宿主 code_run 超时强杀会连坐整棵控制台进程树（本次 master 静默死亡）。必须 `subprocess.Popen(..., creationflags=DETACHED_PROCESS|CREATE_NEW_PROCESS_GROUP|CREATE_NO_WINDOW, stdout/stderr=独立日志文件)` 完全脱离。
