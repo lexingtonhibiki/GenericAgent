@@ -15,6 +15,9 @@ dist/
 
 .streamlit/
 
+# Streamlit 聊天运行时数据（用户会话历史，不入库）
+frontends/chat_history.json
+
 .vscode/
 .idea/
 *.swp
