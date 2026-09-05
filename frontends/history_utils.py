@@ -148,7 +148,28 @@ def scan_imported_sessions():
     return sessions
 
 
+def _fingerprint(path):
+    """(mtime_ns, size) or None if missing — cache-invalidation key component."""
+    try:
+        st = os.stat(path)
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+
+
+_MH_CACHE = {'key': None, 'value': []}
+
+
 def merge_history():
+    # Sidebar renders this on every full-app rerun just for a count; scan_imported_sessions
+    # re-reads ~14MB of logs each time. Memoize on file fingerprints: save/delete bump
+    # mtime+size, so the cache self-invalidates without manual hooks.
+    key = [_fingerprint(HISTORY_FILE)]
+    for path in sorted(glob.glob(os.path.join(LOG_DIR, 'model_responses_*.txt')), reverse=True):
+        key.append((path, _fingerprint(path)))
+    key = tuple(key)
+    if _MH_CACHE['key'] == key:
+        return list(_MH_CACHE['value'])
     native = load_native_history()
     imported = scan_imported_sessions()
     import_ids = {s['id'] for s in imported}
@@ -156,7 +177,9 @@ def merge_history():
              [s for s in native if s.get('id', '').startswith('native_')]
     all_s = native + imported
     all_s.sort(key=lambda x: x.get('created_at', ''), reverse=True)
-    return all_s[:30]
+    _MH_CACHE['key'] = key
+    _MH_CACHE['value'] = all_s[:30]
+    return list(_MH_CACHE['value'])
 
 
 # =============================================
