@@ -5,6 +5,8 @@ Remove: delete this file + 2 lines in stapp.py (search [HISTORY])
 """
 import os, re, json, time, glob, hashlib
 
+import streamlit as st  # for @st.dialog; functions still accept st param for API compat
+
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 HISTORY_FILE = os.path.join(_SCRIPT_DIR, 'chat_history.json')
@@ -215,62 +217,86 @@ def _do_view(st, session, extract_ui_messages):
         st.toast("❌ 无消息可恢复")
 
 
-def render_history_section(st, extract_ui_messages, agent=None):
-    _auto_save(st)
+def _history_row_styles():
+    st.markdown("""<style>
+[role="dialog"] .stButton > button {
+  border:none!important; background:transparent!important; box-shadow:none!important;
+  justify-content:flex-start; text-align:left; padding:.45rem .6rem!important;
+  border-radius:8px; font-weight:400;
+}
+[role="dialog"] .stButton > button:hover { background:rgba(128,128,128,.14)!important; transition:background .15s }
+[role="dialog"] .stButton > button p { font-size:.875rem; line-height:1.35; }
+[role="dialog"] [data-testid="stMarkdownContainer"] hr { margin:.2rem 0!important }
+</style>""", unsafe_allow_html=True)
 
-    all_sessions = merge_history()
-    if not all_sessions:
+
+def _cb_delete(session):
+    # NOTE: dialog is a fragment — callbacks must NOT display elements (st.toast etc.);
+    # signal via session_state and toast in the dialog body's normal render pass.
+    if session.get('source') == 'import':
+        try: os.remove(session['path'])
+        except OSError: pass
+    else:
+        h = [x for x in load_native_history() if x.get('id') != session.get('id')]
+        save_native_history(h)
+        if st.session_state.get(_CURRENT_ID_KEY) == session.get('id'):
+            st.session_state.pop(_CURRENT_ID_KEY, None)
+    st.session_state['_hist_deleted'] = True
+
+
+def _cb_view(st, session, extract_ui_messages):
+    _do_view(st, session, extract_ui_messages)
+
+
+@st.dialog("📜 历史会话", width="small")
+def _history_picker(extract_ui_messages, agent, st):
+    _history_row_styles()
+    if st.session_state.pop('_hist_deleted', False):
+        st.toast("🗑 已删除")
+    sessions = merge_history()
+    if not sessions:
+        st.caption("暂无历史会话")
         return
+    q = st.text_input("过滤", key="hist_filter", placeholder="🔍 按标题过滤…",
+                      label_visibility="collapsed").strip().lower()
+    if q:
+        sessions = [s for s in sessions if q in (s.get('title') or '').lower()]
+    if not sessions:
+        st.caption("没有匹配的会话")
+        return
+    native_count = len([s for s in sessions if s.get('source') == 'native'])
+    st.caption(f"点击行恢复会话 · 共 {len(sessions)} 个（💬 {native_count} · 📥 {len(sessions) - native_count}）")
+    for s in sessions:
+        is_import = s.get('source') == 'import'
+        icon = "📥" if is_import else "💬"
+        title = s.get('title', '未命名')
+        n = s.get('turns', len(s.get('messages', [])))
+        ctime = (s.get('created_at', '') or '')[5:16]
+        sid = s.get('id', str(id(s)))
+        row = st.columns([8, 1, 1])
+        with row[0]:
+            load_label = "▶️" if agent is not None else "👁"
+            if st.button(f"{load_label} {title[:26]}  ·  {n}轮 · {ctime}",
+                         key=f"hist_pick_{sid}", use_container_width=True,
+                         help=f"{title} · {n}轮 · {s.get('created_at', '')}"):
+                if agent is not None: _do_continue(st, s, agent, extract_ui_messages)
+                else: _do_view(st, s, extract_ui_messages)
+        with row[1]:
+            st.button("👁", key=f"hist_pv_{sid}", help="仅查看",
+                      on_click=_cb_view, args=(st, s, extract_ui_messages))
+        with row[2]:
+            st.button("🗑", key=f"hist_rm_{sid}", help="删除", on_click=_cb_delete, args=(s,))
 
-    with st.expander("📜 历史会话", expanded=False):
-        native_count = len([s for s in all_sessions if s.get('source') == 'native'])
-        import_count = len([s for s in all_sessions if s.get('source') == 'import'])
-        st.caption(
-            f"共 {len(all_sessions)} 个  ·  💬 {native_count}  ·  📥 {import_count}"
-        )
 
-        for i, s in enumerate(all_sessions[:20]):
-            is_import = s.get('source') == 'import'
-            title = s.get('title', '未命名')[:35]
-            ctime = s.get('created_at', '')[:16]
-            n = s.get('turns', len(s.get('messages', [])))
-            icon = "📥" if is_import else "💬"
+def render_history_section(st, extract_ui_messages, agent=None):
+    """[HISTORY] Sidebar entry button + modal session picker (st.dialog).
 
-            with st.container():
-                row = st.columns([7, 1, 1])
-                with row[0]:
-                    if agent is not None:
-                        if st.button(
-                            f"{icon} {title}",
-                            key=f"hist_ld_{i}",
-                            help="继续对话（恢复后端+UI）",
-                            use_container_width=True,
-                        ):
-                            _do_continue(st, s, agent, extract_ui_messages)
-                    else:
-                        if st.button(
-                            f"{icon} {title}",
-                            key=f"hist_ld_{i}",
-                            help="点击查看",
-                            use_container_width=True,
-                        ):
-                            _do_view(st, s, extract_ui_messages)
-                with row[1]:
-                    if st.button("👁", key=f"hist_v_{i}", help="仅查看"):
-                        _do_view(st, s, extract_ui_messages)
-                with row[2]:
-                    if st.button("🗑", key=f"hist_d_{i}", help="删除"):
-                        if is_import:
-                            try:
-                                os.remove(s['path'])
-                            except OSError:
-                                pass
-                        else:
-                            h = load_native_history()
-                            h = [x for x in h if x.get('id') != s.get('id')]
-                            save_native_history(h)
-                        st.rerun()
-
-                meta_cols = st.columns([1])
-                with meta_cols[0]:
-                    st.caption(f"{n}轮 · {ctime}")
+    Self-contained & low-coupling: renders one button into st.sidebar only,
+    nothing in the main chat area. agent=None → view-only mode.
+    """
+    _auto_save(st)
+    with st.sidebar:
+        n = len(merge_history())
+        if st.button(f"📜 历史会话 · {n}", use_container_width=True, key="hist_open_btn",
+                     help="切换 / 查看 / 删除历史会话"):
+            _history_picker(extract_ui_messages, agent, st)

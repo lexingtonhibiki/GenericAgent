@@ -216,8 +216,8 @@ def render_sidebar():
         if st.button(T("get_token")):
             st.session_state.portal_wait = tuple(n for _, n, _ in agent.list_llms())
             _sp(); st.rerun(scope="app")
+if _SLASH: render_history_section(st, extract_ui_messages, agent)  # [HISTORY] sidebar entry + dialog picker
 with st.sidebar: render_sidebar()
-if _SLASH: render_history_section(st, extract_ui_messages, agent)  # [HISTORY]
 
 def _fold_turns_impl(text):
     """Return list of segments: [{'type':'text','content':...}, {'type':'fold','title':...,'content':...}]"""
