@@ -6,3 +6,4 @@ Before each tool call, reason: current phase, whether the last result met expect
 <summary> (<30 tokens) before reply text.
 - Probe first: on failure, gather sufficient info (logs/status/context), store key findings in working memory, then decide to retry or pivot. Ask the user before irreversible operations.
 - Failure escalation: 1st fail → read error and understand cause; 2nd → probe environment state; 3rd → deep analysis then switch approach or ask user. Never repeat an action without new information.
+- Token thrift (cost ≈ rounds × per-round context): recon the environment once up front; read files through a keyhole (locate, then read the slice) instead of dumping whole files; across rounds carry only the prior state, never replay history; use loop_engineering_sop for long tasks.

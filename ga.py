@@ -86,9 +86,17 @@ def code_run(code, code_type="python", timeout=60, cwd=None, code_cwd=None, stop
         output_snippet = re.sub(r'`{4,}', lambda m: m.group(0)[:3] + '\u200b' + m.group(0)[3:], output_snippet)
         yield f"[Status] {status_icon} Exit Code: {exit_code}\n[Stdout]\n{output_snippet}\n"
         if process.stdout: threading.Thread(target=process.stdout.close, daemon=True).start()
+        # 先按语义压缩再接 smart_format 截断：避免 >maxlen 的输出被头尾盲截断丢掉关键行
+        # （压缩器见 plugins/output_compress.py，可用 GA_OUTPUT_COMPRESS=0 关闭）
+        _stdout_model = stdout_str
+        try:
+            from plugins.output_compress import compress as _oc_compress
+            _stdout_model, _ = _oc_compress(stdout_str)
+        except Exception:
+            pass
         return {
             "status": status,
-            "stdout": smart_format(stdout_str, max_str_len=maxlen, omit_str='\n\n[omitted long output]\n\n'),
+            "stdout": smart_format(_stdout_model, max_str_len=maxlen, omit_str='\n\n[omitted long output]\n\n'),
             "exit_code": exit_code
         }
     except Exception as e:

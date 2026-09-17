@@ -7,6 +7,8 @@
 ## 通用特性
 - ⚠web_execute_js里使用`await`时需**显式`return`**才能拿到返回值（底层async包裹，不写return则返回null）
 - ✅web_scan自动穿透同源iframe；跨域iframe需CDP或postMessage（见下方章节）
+- ⚠web_scan报「没有可用标签页」可能是误报：master实际已有会话（POST http://127.0.0.1:18766/link `{"cmd":"get_all_sessions"}`可验证）→ 直接web_execute_js即可正常操作，勿反复重启浏览器
+- 视频嗅探: blob视频→页面HTML regex找videoSrc/m3u8→N_m3u8DL-RE下载(工具链见L2"视频嗅探下载"，CDN需带UA否则403)
 
 ## 限制(isTrusted)
 - JS事件`isTrusted=false`，敏感操作（如文件上传/部分按钮）可能被拦截；这类场景首选**CDP桥**

@@ -205,3 +205,12 @@ result = pairing.remove_environment(approved=True)
 - `removed`：向用户说明卸载完成，组件代码目录保留、以后可随时重新配置；提醒用户可在手机 GA 的设备列表中删除这台电脑。用户如要求彻底删除，此时可再删除组件代码目录本身。
 - `partial`：按 `message` 与 `steps` 如实报告未完成的本机步骤（常见原因是文件被占用），处理后重新执行同一调用即可，卸载操作可安全重复。
 - 未取得用户同意不要传 `approved=True`；无参调用仅返回卸载计划，不做任何变更。
+
+## 8. 排障（入网失败）
+
+- 2026-09-10 曾入网失败：根因为控制面 `ganet.gaagent.ai` 服务端对真实客户端静默卡死（TCP 可建立但 Noise 握手无进展），本地无须改任何配置，服务端修复后直接重跑 `configure_environment(approved=True)` 即可。
+- 判定客户端/服务端责任的对照实验（零下载）：`ganet-sidecar.exe run --control-url https://controlplane.tailscale.com --hostname <探针名> --ssh-port <临时端口>`；若 10 秒内打印 login URL 则客户端栈正常，问题在 GA 控制面。探针会改写 `%LOCALAPPDATA%\GenericAgent\GAnet\config.json` 的 hostname/sshPort，测完须恢复（本机为 `xaac`/`48222`）。
+- sidecar 日志（脱敏，仅有 `network_retry type=*fmt.wrapError`）：`%LOCALAPPDATA%\GenericAgent\GAnet\logs\sidecar.log`；TS_LOG_TARGET 劫持无效。grant 每次可用 `network._request_enrollment(auth.get_token(), hostname)` 验证。
+- sidecar 状态查询：`http://127.0.0.1:48223/status`（同 `sidecar_manager.inspect()`）；控制端口 48223 被占用即说明已在运行，手动探针须先 `sidecar_manager._stop_running()` 并在测后 `_start()` 恢复。
+- 手动探针注意：`run` 子命令须带 `-control-url/-hostname/-ssh-port` 且 stdin 立即关闭，否则阻塞在 auth-key 读取、零输出（banner 都不出）；日志走 stderr，输出重定向须 `stderr=subprocess.STDOUT`。
+- 2026-09-17 复测仍服务端阻塞（症状同 09-10）：WS 帧层已响应（对垃圾帧回与官方一致的 1008 close，服务端活着），但真实 Noise 握手无进展；直连与设 HTTPS_PROXY 走 Clash 均复现（客户端每秒重连 WS）→ 排除 GFW/代理，无须再本机排查。详细证据见 temp 目录 `ganet_diagnosis_2026-09-10.md`。
