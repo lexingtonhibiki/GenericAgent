@@ -5,7 +5,8 @@ _INFLIGHT = {}  # thread ident -> live socket; lets abort() close it even before
 _orig_conn_request = urllib3.connection.HTTPConnection.request
 def _conn_request_hook(self, *a, **k):  # after request() the socket is connected+sent; conn.sock may later be None'd by http.client
     r = _orig_conn_request(self, *a, **k); _INFLIGHT[threading.get_ident()] = self.sock; return r
-urllib3.connection.HTTPConnection.request = _conn_request_hook_RESP_CACHE_KEY = str(uuid.uuid4()); _RESP_CODEX_KEY = str(uuid.uuid4())
+urllib3.connection.HTTPConnection.request = _conn_request_hook
+_RESP_CACHE_KEY = str(uuid.uuid4()); _RESP_CODEX_KEY = str(uuid.uuid4())
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 if _ROOT not in sys.path: sys.path.append(_ROOT)
 

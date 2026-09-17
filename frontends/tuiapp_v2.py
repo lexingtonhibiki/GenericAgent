@@ -2091,7 +2091,8 @@ COMMANDS = [
     ("/conductor", "[task]",           "调用 frontends/conductor.py 多 subagent 编排"),
     ("/scheduler", "",                 "多选启动/停止 reflect 任务（cron 由 reflect/scheduler.py 驱动）"),
     ("/continue", "[n|name]",         "列出 / 恢复历史会话"),
-    ("/delete",   "[n]",              "删除历史会话日志文件"),    ("/workspace","[path|off]",       "设定工作目录(绝对路径)并进入项目模式"),
+    ("/delete",   "[n]",              "删除历史会话日志文件"),
+    ("/workspace","[path|off]",       "设定工作目录(绝对路径)并进入项目模式"),
     ("/resume",   "",                 "列出最近会话并恢复其中一个"),
     ("/cost",     "[all]",            "显示当前会话 token 用量（all = 所有会话）"),
     ("/export",   "clip|<file>|all",  "导出最后回复"),
@@ -3614,7 +3615,8 @@ class GenericAgentTUI(App[None]):
             "effort": self._cmd_effort,
             "export": self._cmd_export,
             "restore": self._cmd_restore, "btw": self._cmd_btw, "review": self._cmd_review,
-            "continue": self._cmd_continue, "delete": self._cmd_delete, "cost": self._cmd_cost,            "workspace": self._cmd_workspace,
+            "continue": self._cmd_continue, "delete": self._cmd_delete, "cost": self._cmd_cost,
+            "workspace": self._cmd_workspace,
             "reload-keys": self._cmd_reload_keys,
             # slash_cmds bundle — see frontends/slash_cmds.py for the prompt
             # bodies + reflect/scheduler discovery.  All but /scheduler are
@@ -5718,6 +5720,7 @@ class GenericAgentTUI(App[None]):
         except Exception:
             pass
         self._system(f"✅ 已删除 {os.path.basename(path)}")
+
     def _cmd_continue(self, args, raw):
         sess = self.current
         m = re.match(r"/continue\s+(\S.*?)\s*$", (raw or "").strip())
