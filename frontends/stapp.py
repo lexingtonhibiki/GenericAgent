@@ -21,8 +21,7 @@ try:  # optional slash cmds; missing modules must not block main chat
     from continue_cmd import handle_frontend_command, reset_conversation, list_sessions, extract_ui_messages
     from btw_cmd import handle_frontend_command as btw_handle_frontend
     from export_cmd import last_assistant_text, export_to_temp, wrap_for_clipboard
-    from history_utils import render_history_section  # [HISTORY] local feature
-    _SLASH = True
+    from history_utils import render_history_section  # [HISTORY] local feature    _SLASH = True
 except ImportError:
     _SLASH = False
 
@@ -216,8 +215,7 @@ def render_sidebar():
         if st.button(T("get_token")):
             st.session_state.portal_wait = tuple(n for _, n, _ in agent.list_llms())
             _sp(); st.rerun(scope="app")
-if _SLASH: render_history_section(st, extract_ui_messages, agent)  # [HISTORY] sidebar entry + dialog picker
-with st.sidebar: render_sidebar()
+if _SLASH: render_history_section(st, extract_ui_messages, agent)  # [HISTORY] sidebar entry + dialog pickerwith st.sidebar: render_sidebar()
 
 def _fold_turns_impl(text):
     """Return list of segments: [{'type':'text','content':...}, {'type':'fold','title':...,'content':...}]"""

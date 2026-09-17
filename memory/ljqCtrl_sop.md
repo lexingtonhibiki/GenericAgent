@@ -49,5 +49,4 @@ ljqCtrl.Click(ox + (bbox[0]+bbox[2])//2, oy + (bbox[1]+bbox[3])//2)
 图标类按钮（···更多 / 铅笔编辑 / 关闭等）靠 OCR/vision 极易误判误点。优先走 GUI 优先链的「UIA」层：用 `osascript` 的 System Events 递归 `entire contents` 枚举进程**所有窗口**的真实控件，拿到 `AXRole + description(标识符) + position`，直接 `perform action "AXPress"` 点中。
 - **关键坑**：弹窗/详情卡常是**独立子窗口**，`front window` 只返回主窗（如红绿灯按钮）。必须 `every window` 遍历 + `entire contents`，否则找不到目标控件。
 - 控件常自带语义化 `description`/`identifier`（如 `xxx_button_more`），按 description 精确匹配比坐标稳定，枚举一次记下目标标识即可复用。
-- **坐标换算**：`macljqCtrl.AXElements` 返回的已是**物理像素**（库内自动 /dpi_scale，与 Click/截图统一，详见 computer_use.md macOS 节）。AX `AXPress` 直接作用元素免换算；若 AX 偶发 NOTFOUND（时序波动），用元素物理坐标 `Click` 兜底。
-- **失焦陷阱**：点击坐标若落在窗口边界外，会点到背后别的 app 导致目标失焦。osascript `tell application "<App>" to activate` 比 ljqCtrl 的 ActivateApp 更可靠，激活后用 `frontmost` 确认。
+- **坐标换算**：`macljqCtrl.AXElements` 返回的已是**物理像素**（库内自动 /dpi_scale，与 Click/截图统一，详见 computer_use.md macOS 节）。AX `AXPress` 直接作用元素免换算；若 AX 偶发 NOTFOUND（时序波动），用元素物理坐标 `Click` 兜底。- **失焦陷阱**：点击坐标若落在窗口边界外，会点到背后别的 app 导致目标失焦。osascript `tell application "<App>" to activate` 比 ljqCtrl 的 ActivateApp 更可靠，激活后用 `frontmost` 确认。

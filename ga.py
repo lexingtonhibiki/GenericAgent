@@ -96,8 +96,7 @@ def code_run(code, code_type="python", timeout=60, cwd=None, code_cwd=None, stop
             pass
         return {
             "status": status,
-            "stdout": smart_format(_stdout_model, max_str_len=maxlen, omit_str='\n\n[omitted long output]\n\n'),
-            "exit_code": exit_code
+            "stdout": smart_format(_stdout_model, max_str_len=maxlen, omit_str='\n\n[omitted long output]\n\n'),            "exit_code": exit_code
         }
     except Exception as e:
         if 'process' in locals(): process.kill()
@@ -536,8 +535,8 @@ class GenericAgentHandler(BaseHandler):
         '''Agent觉得当前任务完成后有重要信息需要记忆时调用此工具。'''
         prompt = '''### [总结提炼经验] 既然你觉得当前任务有重要信息需要记忆，请提取最近一次任务中【事实验证成功且长期有效】的环境事实、用户偏好、重要步骤，更新记忆。
 本工具是标记开启结算过程，若已在更新记忆过程或没有值得记忆的点，忽略本次调用。
-**如果没有经验证的，未来能用上的信息，忽略本次调用！**
-**只能提取行动验证成功的信息**：
+**如果没有经过验证的，未来能用上的信息，忽略本次调用！**
+**必须成功完成任务，或到达重要检查点才能进行记忆提炼，未成功完成则忽略本次调用！****只能提取行动验证成功的信息**：
 - **环境事实**（路径/凭证/配置）→ `file_patch` 更新 L2，同步 L1
 - **复杂任务经验**（关键坑点/前置条件/重要步骤）→ L3 精简 SOP（只记你被坑得多次重试的核心要点）
 **禁止**：临时变量、具体推理过程、未验证信息、通用常识、你可以轻松复现的细节、只是做了但没有验证的信息

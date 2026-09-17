@@ -207,7 +207,6 @@ result = pairing.remove_environment(approved=True)
 - 未取得用户同意不要传 `approved=True`；无参调用仅返回卸载计划，不做任何变更。
 
 ## 8. 排障（入网失败）
-
 - 2026-09-10 曾入网失败：根因为控制面 `ganet.gaagent.ai` 服务端对真实客户端静默卡死（TCP 可建立但 Noise 握手无进展），本地无须改任何配置，服务端修复后直接重跑 `configure_environment(approved=True)` 即可。
 - 判定客户端/服务端责任的对照实验（零下载）：`ganet-sidecar.exe run --control-url https://controlplane.tailscale.com --hostname <探针名> --ssh-port <临时端口>`；若 10 秒内打印 login URL 则客户端栈正常，问题在 GA 控制面。探针会改写 `%LOCALAPPDATA%\GenericAgent\GAnet\config.json` 的 hostname/sshPort，测完须恢复（本机为 `xaac`/`48222`）。
 - sidecar 日志（脱敏，仅有 `network_retry type=*fmt.wrapError`）：`%LOCALAPPDATA%\GenericAgent\GAnet\logs\sidecar.log`；TS_LOG_TARGET 劫持无效。grant 每次可用 `network._request_enrollment(auth.get_token(), hostname)` 验证。
